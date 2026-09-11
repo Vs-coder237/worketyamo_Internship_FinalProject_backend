@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -15,13 +14,52 @@ datasource db {
 }
 
 enum Role {
-  User
-  Admin
+  USER
+  ADMIN
 }
 
-model Users {
-  id        String @id @default(uuid()) @map("_id")
+enum RequestType {
+  INTERNSHIP // Stage
+  TRAINING   // Formation
+}
+
+enum RequestStatus {
+  PENDING    // En attente
+  IN_REVIEW  // En cours d'examen
+  APPROVED   // Acceptée
+  REJECTED   // Refusée
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  email     String @unique
+  email     String   @unique
   password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Application {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  referenceNumber String        @unique
+  type            RequestType
+  status          RequestStatus @default(PENDING)
+  
+  fullName        String
+  email           String
+  phone           String
+  message         String?
+  cvUrl           String?
+
+  appointmentDate DateTime?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model TimeSlot {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  date        DateTime
+  isAvailable Boolean  @default(true)
 }
