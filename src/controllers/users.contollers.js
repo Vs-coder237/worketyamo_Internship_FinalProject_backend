@@ -1,10 +1,10 @@
 import httpCode from "../constants/index.js"
 import { v4 as uuidv4 } from "uuid"
-import bcrypt from ('bcrypt')
+import bcrypt from 'bcrypt'
 import prisma from "../lib/prisma.js"
 
 const Authentification = {
-    signup : async (req, res) => {
+    Login : async (req, res) => {
         try {
             const {id, name, email, password, role} = req.body
 
