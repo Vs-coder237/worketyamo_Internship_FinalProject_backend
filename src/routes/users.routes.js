@@ -3,6 +3,6 @@ import Authentification from "../controllers/users.contollers.js";
 
 const routes = Router()
 
-routes.get('/', Authentification.signup)
+routes.get('/', Authentification.Login)
 
 export default routes

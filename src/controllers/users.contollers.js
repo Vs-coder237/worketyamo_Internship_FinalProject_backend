@@ -2,42 +2,59 @@ import httpCode from "../constants/index.js"
 import { v4 as uuidv4 } from "uuid"
 import bcrypt from 'bcrypt'
 import prisma from "../lib/prisma.js"
+import jwt from 'jsonwebtoken'
+
+
+const generateAccessToken = (user) => {
+    return jwt.sign({
+        id: user.id,
+        role: user.role},
+        process.env.JWT_ACCESS_TOKEN,
+        {expiresIn: '15m'}
+    )
+}
+
+const generateRefreshToken = (user) => {
+    return jwt.sign({
+        id: user.id,
+        role: user.role},
+        process.env.JWT_REFRESH_TOKEN,
+        {expiresIn: '7d'}
+    )
+}
 
 const Authentification = {
     Login : async (req, res) => {
         try {
-            const {id, name, email, password, role} = req.body
+            const {email, password} = req.body
 
-            if (!email || !name || !password) {
+            if (!email || !password) {
                 return res.status(httpCode.BAD_REQUEST).json({message: 'enter all fields'})
             }
-            // verifying if email already exist
-            const emailExist = await prisma.user.findUnique({
-                where : {email}
-            })
 
-            if (emailExist) {
-                return res.status(httpCode.BAD_REQUEST).json({message: 'this email already exist'})
-            }
-            // password hashing with bcrypt
-            const hashPassword = bycrpt.hash(password, 10)
+            const user = await prisma.user.findUnique({where: {email}})
 
-            //creating new user
-            const newUser = await prisma.user.create({
-                data: {
-                    id: uuidv4(),
-                    name,
-                    email,
-                    password: hashPassword,
-                    role: role || "USER"
-                }
-            })
+            // password compare with bcrypt
+            const verifiedPassword = bcrypt.compare(password, user.password)
 
-            if (!newUser) {
-                return res.status(httpCode.NO_CONTENT).json({error: 'error'})
+            if (!verifiedPassword) {
+                return res.status(httpCode.NOT_FOUND).json({message: 'wrong password'})
             }
 
-            return res.status(httpCode.CREATED).json({message: 'The user has been created successfully', newUser})
+            const accessToken = generateAccessToken(user)
+            const refreshToken = generateRefreshToken(user)
+
+            await prisma.Users.update({
+                where: {id: user.id},
+                data: {refreshToken}
+            })
+
+            return res.status(httpCode.OK).json({
+                message: 'successfully connected',
+                token: accessToken, refreshToken,
+                user: {id: user.id}, email: user.email, role: user.role
+            })
+            
         } catch (error) {
             return res.status(httpCode.INTERNAL_SERVER_ERROR).json({error: 'server error'})
         }
